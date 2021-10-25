@@ -1,0 +1,62 @@
+---
+title: "DNA DaBaWa"
+author: "Franco Marsico"
+date: "9/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Abstract
+
+DNA Database Wathcer is a set of tools that provide quality analysis for DNA data in large scale forensic cases. It focuses in outilers detection aiming to provide automatic checking of DNA profiles for both error and intentional data corruption. Here, we analyze different algorithms accuracy for a simulated dataset. 
+
+# Incorporating packages
+```{r}
+library(pedtools)
+library(forrel)
+```
+
+
+# Setting up the pedigree and marker data
+Firstly we will analyze an example based on a database with 23 autosomal STRs markers.
+```{r}
+x = readFam("23M.fam", useDVI = T, verbose = FALSE)$F10$`Reference pedigree`
+x = relabel(x, new = c(1:6)) #relabeling the name of the family members
+x= removeIndividuals(x, c(2,5,6))
+x = addChildren(x, father = 4, mother = 1)
+x = addChildren(x, father = 5)
+plot(x, shaded = typedMembers(x))
+
+Grand = removeIndividuals(x, 3)
+Grand_white = setAlleles(Grand, c(4,1), alleles = NA)
+plot(Grand, shaded = typedMembers(x))
+
+Uncle = setAlleles(x, c(4,1), alleles = NA)
+Uncle_white = setAlleles(x, c(4,1, 3), alleles = NA)
+plot(Uncle, shaded = 3)
+
+```
+
+# Simulating genetic data
+Now, we simulate genetic data for the missing person (7 in this case) and for a random person.
+
+```{r pressure, echo=FALSE}
+set.seed(1000)
+#relatedGrand <- profileSim(Grand, N = 100000, numCores = 10, ids = 7) 
+unrelatedGrand <- profileSim(Grand_white, N = 100000, numCores = 10, ids = 7)
+```
+
+Trabajo sobre el formato de los datos
+
+```{r pressure, echo=FALSE}
+Related_Grand_Base <- lapply(unrelatedGrand, data.frame, stringsAsFactors = FALSE) # convertir los nested lists en dataframes.
+Related_Grand_Base2 <- do.call(rbind, Related_Grand_Base) # combinalos en uno solo
+library(dplyr)
+Related_Grand_Data <- filter(Related_Grand_Base2, id == 7)
+library(data.table)
+fwrite(Related_Grand_Data, file = "GrandparentsPed_unrelated_1.csv")
+```
+
